@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget ca-certificates gnupg sudo cron net-tools iproute2 \
     lsof procps locales tzdata unzip tar git lsb-release \
     python3 iputils-ping nano \
-    libjemalloc2 libonig5 libwebp7 libgd3 libxml2 libxslt1.1 \
+    libjemalloc2 libluajit-5.1-2 libonig5 libwebp7 libgd3 libxml2 libxslt1.1 \
     libncurses6 libnuma1 libicu-dev libcurl4 libssl3 libfreetype6 \
     libjpeg-turbo8 libsodium23 libargon2-1 libaio1t64 libzip4t64 libpng16-16t64 \
     && rm -rf /var/lib/apt/lists/*
@@ -42,7 +42,7 @@ RUN curl -ksSO https://www.aapanel.com/script/install_panel_en.sh && \
 RUN mv /www /opt/www_seed && mkdir -p /www
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 7800 80 443 888
 

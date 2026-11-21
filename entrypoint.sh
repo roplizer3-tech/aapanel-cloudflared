@@ -60,6 +60,23 @@ if [ -f "$PERSIST_DIR/etc/my.cnf" ] && [ ! -f /etc/my.cnf ]; then
     cp -a "$PERSIST_DIR/etc/my.cnf" /etc/my.cnf
 fi
 
+# Ensure MariaDB data dir & my.cnf exist
+if [ -d /www/server/mysql ]; then
+    mkdir -p /www/server/mysql/data /www/server/data
+    chown -R mysql:mysql /www/server/mysql /www/server/data 2>/dev/null || true
+    if [ ! -f /etc/my.cnf ]; then
+        cat <<'EOF' > /etc/my.cnf
+[mysqld]
+user=mysql
+datadir=/www/server/data
+socket=/tmp/mysql.sock
+log-error=/www/server/data/mysql.err
+pid-file=/www/server/data/mysql.pid
+port=3306
+EOF
+    fi
+fi
+
 # Ensure MySQL/MariaDB init script exists if installed in /www/server/mysql
 if [ ! -x /etc/init.d/mysqld ] && [ -f /www/server/mysql/support-files/mysql.server ]; then
     cp -a /www/server/mysql/support-files/mysql.server /etc/init.d/mysqld
@@ -164,6 +181,14 @@ bt 14 || true
 echo "Panel listening on port: $TARGET_PORT"
 echo "Panel entry path: $(cat /www/server/panel/data/admin_path.pl 2>/dev/null || echo '/aapanel')"
 
+echo "=== Listening Ports & Local Health Check ==="
+ss -tlnp 2>/dev/null | grep -E "7800|80|3306" || netstat -tlnp 2>/dev/null | grep -E "7800|80|3306" || true
+if ! curl -sI --max-time 5 "http://127.0.0.1:${TARGET_PORT}/aapanel" | head -n 5; then
+    echo "[WARN] Port ${TARGET_PORT} did not respond! Checking panel error log and restarting..."
+    tail -n 30 /www/server/panel/logs/error.log 2>/dev/null || true
+    /etc/init.d/bt restart || true
+fi
+
 # 7. Start Cloudflare Tunnel if TUNNEL_TOKEN is configured
 if [ -n "$TUNNEL_TOKEN" ]; then
     echo "[Cloudflare] Starting cloudflared tunnel..."
@@ -178,13 +203,13 @@ else
     echo "[Cloudflare] TUNNEL_TOKEN not set yet. Running aaPanel without Cloudflare Tunnel."
 fi
 
-# 8. Keep container alive, sync system state, and monitor aaPanel
+# 8. Keep container alive, sync system state, and actively health-check aaPanel
 trap 'sync_sys_persist; /etc/init.d/bt stop; exit 0' SIGTERM SIGINT
 tick=0
 while true; do
-    if ! pgrep -f "BT-Panel" >/dev/null 2>&1; then
-        echo "[Monitor] BT-Panel not running, restarting..."
-        /etc/init.d/bt start || true
+    if ! pgrep -f "BT-Panel" >/dev/null 2>&1 || ! curl -sI --max-time 5 "http://127.0.0.1:${TARGET_PORT}/" >/dev/null 2>&1; then
+        echo "[Monitor] BT-Panel not responding on port ${TARGET_PORT}, restarting..."
+        /etc/init.d/bt restart || true
     fi
     tick=$((tick + 1))
     if [ $((tick % 4)) -eq 0 ]; then

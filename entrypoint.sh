@@ -15,7 +15,7 @@ echo "${BT_PORT}" > /www/server/panel/data/port.pl
 rm -f /www/server/panel/data/ssl.pl /www/server/panel/data/domain.pl
 
 if [ "${BT_PATH:-}" = "none" ] || [ -z "${BT_PATH:-}" ]; then
-    echo "/panel" > /www/server/panel/data/admin_path.pl
+    echo "/aapanel" > /www/server/panel/data/admin_path.pl
 else
     echo "${BT_PATH}" > /www/server/panel/data/admin_path.pl
 fi
@@ -33,11 +33,11 @@ service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
 sleep 2
-echo "[diag] /login local:"
-curl -i -sS "http://127.0.0.1:${BT_PORT}/login" | head -n 15 || true
-echo "[diag] /panel local:"
-curl -i -sS "http://127.0.0.1:${BT_PORT}/panel" | head -n 15 || true
-echo "[diag] BTPanel redirect/https lines:"
-grep -nE "302|redirect|admin_path|ssl|https://" /www/server/panel/BTPanel/__init__.py 2>/dev/null | head -n 40 || true
+echo "[diag] BTPanel 355-385:"
+sed -n '355,385p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
+echo "[diag] curl /aapanel via 7800:"
+curl -i -sS "http://127.0.0.1:${BT_PORT}/aapanel" | head -n 20 || true
+echo "[diag] curl /aapanel via unix socket:"
+curl -i -sS --unix-socket /tmp/panel.sock "http://127.0.0.1/aapanel" | head -n 20 || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

@@ -32,9 +32,9 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] BTPanel 615-642:"
-sed -n '615,642p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
-echo "[diag] BTPanel 785-835:"
-sed -n '785,835p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
+echo "[diag] 615-640:"
+sed -n '615,640p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
+echo "[diag] 667-715:"
+sed -n '667,715p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

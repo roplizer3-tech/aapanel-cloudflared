@@ -37,18 +37,17 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] Flask request context:"
+echo "[diag] Trace request_check:"
 cd /www/server/panel && "$BTPY" -c "
-import sys; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
+import sys, traceback; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
 import BTPanel
-with BTPanel.app.test_request_context('/aapanel', headers={'Host': 'panel.korixa.online'}):
-    print('check_apsess_path:', repr(BTPanel.check_apsess_path()))
-    print('get_proxy_client_ip:', repr(BTPanel.get_proxy_client_ip()))
-with BTPanel.app.test_client() as c:
-    r = c.get('/aapanel', headers={'Host': '127.0.0.1:7800'})
-    print('TEST 127:', r.status_code, r.headers.get('Location'))
-    r2 = c.get('/login', headers={'Host': '127.0.0.1:7800'})
-    print('TEST 127 login:', r2.status_code, r2.headers.get('Location'))
+for p in ['/aapanel', '/login']:
+    with BTPanel.app.test_request_context(p, headers={'Host': '127.0.0.1:7800'}):
+        try:
+            res = BTPanel.request_check()
+            print('request_check', p, '->', repr(res))
+        except Exception as e:
+            print('request_check', p, 'EXC:', repr(e))
 " || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

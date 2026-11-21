@@ -31,15 +31,14 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] Rest of login() and test_client without admin_path.pl:"
+echo "[diag] GET part of login():"
 cd /www/server/panel && "$BTPY" -c "
 import sys, inspect; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
 import BTPanel
-print(inspect.getsource(BTPanel.login)[1400:])
-with BTPanel.app.test_client() as c:
-    for p in ['/', '/login', '/bt']:
-        r = c.get(p, headers={'Host': 'panel.korixa.online'})
-        print('TEST:', p, r.status_code, r.headers.get('Location'))
+src = inspect.getsource(BTPanel.login)
+idx = src.find('method_get')
+for i, l in enumerate(src[idx:].splitlines()[:70]):
+    print(f'{i}: {l}')
 " || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

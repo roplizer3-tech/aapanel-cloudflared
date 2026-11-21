@@ -37,17 +37,13 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] Trace request_check:"
+echo "[diag] BTPanel url_map:"
 cd /www/server/panel && "$BTPY" -c "
-import sys, traceback; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
+import sys; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
 import BTPanel
-for p in ['/aapanel', '/login']:
-    with BTPanel.app.test_request_context(p, headers={'Host': '127.0.0.1:7800'}):
-        try:
-            res = BTPanel.request_check()
-            print('request_check', p, '->', repr(res))
-        except Exception as e:
-            print('request_check', p, 'EXC:', repr(e))
+rules = [r.rule for r in BTPanel.app.url_map.iter_rules()]
+print('total rules:', len(rules))
+print('sample:', [r for r in rules if 'login' in r or r in ('/', '/aapanel', '/bt') or r.startswith('/v2')][:25])
 " || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

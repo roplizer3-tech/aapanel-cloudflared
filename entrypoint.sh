@@ -17,13 +17,11 @@ BT_PORT="${BT_PORT:-7800}"
 echo "${BT_PORT}" > /www/server/panel/data/port.pl
 rm -f /www/server/panel/data/ssl.pl /www/server/panel/data/domain.pl
 
-# 3. Configure security entrance path (default /panel so aaPanel 7.x does not 404 on root)
+# 3. Configure security entrance path
 if [ "${BT_PATH:-}" = "none" ] || [ -z "${BT_PATH:-}" ]; then
     echo "/panel" > /www/server/panel/data/admin_path.pl
-    echo "[init] aaPanel security entrance set to /panel."
 else
     echo "${BT_PATH}" > /www/server/panel/data/admin_path.pl
-    echo "[init] aaPanel security entrance set to ${BT_PATH}."
 fi
 
 # 4. Configure password if provided
@@ -40,25 +38,15 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-# 6. Start any installed aaPanel services (Nginx, MySQL, PHP-FPM, Redis)
-for svc in nginx mysqld pure-ftpd redis; do
-    if [ -x "/etc/init.d/${svc}" ]; then
-        "/etc/init.d/${svc}" start || true
-    fi
-done
-
-for phpfpm in /etc/init.d/php-fpm-*; do
-    if [ -x "$phpfpm" ]; then
-        "$phpfpm" start || true
-    fi
-done
-
-echo "[init] aaPanel listening on port ${BT_PORT}."
 sleep 2
-echo "[init] bt 14 output:"
-bt 14 || true
-echo "[init] Listening sockets:"
-ss -tlnp || netstat -tlnp || true
+echo "[diag] ps aux:"
+ps aux | grep -E "bt|panel|webserver|nginx|python" || true
+echo "[diag] /www/server/panel/data:"
+ls -la /www/server/panel/data/ || true
+echo "[diag] panel error log tail:"
+tail -n 25 /www/server/panel/logs/error.log 2>/dev/null || true
+echo "[diag] webserver conf:"
+find /www/server/panel -maxdepth 3 -name "*.conf" 2>/dev/null | head -n 20 || true
 
-# 7. Hand over to supervisord in foreground
+# 6. Hand over to supervisord in foreground
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

@@ -1,50 +1,49 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8 \
-    BT_PORT=7800
+    TZ=UTC \
+    PANEL_PORT=7800 \
+    PANEL_ENTRY=/aapanel
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    curl \
-    ca-certificates \
-    gnupg \
-    sudo \
-    net-tools \
-    iproute2 \
-    procps \
-    lsof \
-    cron \
-    supervisor \
-    tini \
+    curl wget ca-certificates gnupg sudo cron net-tools iproute2 \
+    lsof procps locales tzdata unzip tar git lsb-release \
+    python3 iputils-ping nano \
+    libjemalloc2 libonig5 libwebp7 libgd3 libxml2 libxslt1.1 \
+    libncurses6 libnuma1 libicu-dev libcurl4 libssl3 libfreetype6 \
+    libjpeg-turbo8 libsodium23 libargon2-1 libaio1t64 libzip4t64 libpng16-16t64 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install latest official cloudflared
-RUN curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb \
-    && dpkg -i /tmp/cloudflared.deb \
-    && rm -f /tmp/cloudflared.deb
+# Install libicu60 runtime for aaPanel prebuilt PHP binaries (e.g. libicuio.so.60)
+RUN curl -fsSL http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu60_60.2-3ubuntu3.2_amd64.deb -o /tmp/libicu60.deb \
+    && dpkg -i /tmp/libicu60.deb || true \
+    && rm -f /tmp/libicu60.deb \
+    && ldconfig
 
-# Install latest official aaPanel (7.x) non-interactively
-RUN curl -ksSO https://www.aapanel.com/script/install_7.0_en.sh \
-    && printf "y\nn\n" | bash install_7.0_en.sh aapanel \
-    && rm -f install_7.0_en.sh
+# Ensure www and mysql system users always exist across redeploys
+RUN groupadd -f www && (id -u www >/dev/null 2>&1 || useradd -g www -s /sbin/nologin www) && \
+    groupadd -f mysql && (id -u mysql >/dev/null 2>&1 || useradd -g mysql -s /sbin/nologin mysql)
 
-# Seed /www for persistent volume initialization on first boot
-RUN mkdir -p /opt/www-seed \
-    && cp -a /www/. /opt/www-seed/
+# Install latest cloudflared binary
+RUN ARCH=$(dpkg --print-architecture) && \
+    curl -fsSL "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${ARCH}" -o /usr/local/bin/cloudflared && \
+    chmod +x /usr/local/bin/cloudflared
 
-COPY supervisord.conf /etc/supervisor/conf.d/aapanel-cloudflared.conf
-COPY run-cloudflared.sh /usr/local/bin/run-cloudflared.sh
+# Install latest aaPanel (Free edition) non-interactively
+RUN curl -ksSO https://www.aapanel.com/script/install_panel_en.sh && \
+    printf "y\nn\n" | bash install_panel_en.sh && \
+    rm -f install_panel_en.sh && \
+    rm -f /www/server/panel/data/ssl.pl && \
+    echo "7800" > /www/server/panel/data/port.pl && \
+    echo "/aapanel" > /www/server/panel/data/admin_path.pl && \
+    /etc/init.d/bt stop || true
+
+# Move /www to /opt/www_seed so mounting an empty persistent volume at /www works cleanly
+RUN mv /www /opt/www_seed && mkdir -p /www
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY healthcheck.sh /usr/local/bin/healthcheck.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-RUN chmod +x /usr/local/bin/run-cloudflared.sh /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.sh
+EXPOSE 7800 80 443 888
 
-EXPOSE 80 443 7800
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD /usr/local/bin/healthcheck.sh
-
-ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

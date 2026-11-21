@@ -32,9 +32,10 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] BTPanel 460-535:"
-sed -n '460,535p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
-echo "[diag] panel.sock test:"
-curl -i -sS --unix-socket /tmp/panel.sock "http://127.0.0.1${ENTRANCE_PATH}" | head -n 15 || true
+sleep 3
+echo "[diag] /tmp sockets:"
+ls -la /tmp/ || true
+echo "[diag] panel & webserver logs:"
+tail -n 20 /www/server/panel/logs/*.log /www/server/panel/webserver/logs/*.log 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

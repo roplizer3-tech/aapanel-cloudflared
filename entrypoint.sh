@@ -33,8 +33,11 @@ service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
 sleep 2
-echo "[diag] webserver conf files:"
-ls -la /www/server/panel/webserver/conf/ || true
-head -n 120 /www/server/panel/webserver/conf/* 2>/dev/null || true
+echo "[diag] /login local:"
+curl -i -sS "http://127.0.0.1:${BT_PORT}/login" | head -n 15 || true
+echo "[diag] /panel local:"
+curl -i -sS "http://127.0.0.1:${BT_PORT}/panel" | head -n 15 || true
+echo "[diag] BTPanel redirect/https lines:"
+grep -nE "302|redirect|admin_path|ssl|https://" /www/server/panel/BTPanel/__init__.py 2>/dev/null | head -n 40 || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

@@ -55,10 +55,10 @@ done
 
 echo "[init] aaPanel listening on port ${BT_PORT}."
 sleep 2
-echo "[init] Probe /panel:"
-curl -i -sS --max-time 5 "http://127.0.0.1:${BT_PORT}/panel" | head -n 15 || true
-echo "[init] Probe /login:"
-curl -i -sS --max-time 5 "http://127.0.0.1:${BT_PORT}/login" | head -n 15 || true
+echo "[init] bt 14 output:"
+bt 14 || true
+echo "[init] Listening sockets:"
+ss -tlnp || netstat -tlnp || true
 
 # 7. Hand over to supervisord in foreground
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

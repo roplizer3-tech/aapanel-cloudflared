@@ -17,15 +17,13 @@ BT_PORT="${BT_PORT:-7800}"
 echo "${BT_PORT}" > /www/server/panel/data/port.pl
 rm -f /www/server/panel/data/ssl.pl /www/server/panel/data/domain.pl
 
-# 3. Configure security entrance path (BT_PATH=none disables it)
-if [ -n "${BT_PATH:-}" ]; then
-    if [ "${BT_PATH}" = "none" ]; then
-        rm -f /www/server/panel/data/admin_path.pl
-        echo "[init] aaPanel security entrance disabled (BT_PATH=none)."
-    else
-        echo "${BT_PATH}" > /www/server/panel/data/admin_path.pl
-        echo "[init] aaPanel security entrance set to ${BT_PATH}."
-    fi
+# 3. Configure security entrance path (default /panel so aaPanel 7.x does not 404 on root)
+if [ "${BT_PATH:-}" = "none" ] || [ -z "${BT_PATH:-}" ]; then
+    echo "/panel" > /www/server/panel/data/admin_path.pl
+    echo "[init] aaPanel security entrance set to /panel."
+else
+    echo "${BT_PATH}" > /www/server/panel/data/admin_path.pl
+    echo "[init] aaPanel security entrance set to ${BT_PATH}."
 fi
 
 # 4. Configure password if provided
@@ -57,8 +55,10 @@ done
 
 echo "[init] aaPanel listening on port ${BT_PORT}."
 sleep 2
-echo "[init] Local health probe (http://127.0.0.1:${BT_PORT}/):"
-curl -i -sS --max-time 5 "http://127.0.0.1:${BT_PORT}/" | head -n 20 || true
+echo "[init] Probe /panel:"
+curl -i -sS --max-time 5 "http://127.0.0.1:${BT_PORT}/panel" | head -n 15 || true
+echo "[init] Probe /login:"
+curl -i -sS --max-time 5 "http://127.0.0.1:${BT_PORT}/login" | head -n 15 || true
 
 # 7. Hand over to supervisord in foreground
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

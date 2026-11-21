@@ -37,13 +37,15 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] BTPanel url_map:"
+echo "[diag] View function for login:"
 cd /www/server/panel && "$BTPY" -c "
-import sys; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
+import sys, inspect; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
 import BTPanel
-rules = [r.rule for r in BTPanel.app.url_map.iter_rules()]
-print('total rules:', len(rules))
-print('sample:', [r for r in rules if 'login' in r or r in ('/', '/aapanel', '/bt') or r.startswith('/v2')][:25])
+for r in BTPanel.app.url_map.iter_rules():
+    if r.rule in ('/', '/login', '/aapanel'):
+        fn = BTPanel.app.view_functions[r.endpoint]
+        print('=== RULE:', r.rule, r.endpoint, '===')
+        print(inspect.getsource(fn)[:1500])
 " || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

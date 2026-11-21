@@ -33,11 +33,8 @@ service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
 sleep 2
-echo "[diag] webserver binary & conf:"
-ls -la /www/server/panel/ | grep -E "web|nginx|conf" || true
-ls -la /www/server/panel/webserver* 2>/dev/null || true
-cat /www/server/panel/webserver/conf/nginx.conf 2>/dev/null | head -n 80 || true
-echo "[diag] curl with X-Forwarded-Proto: https:"
-curl -i -sS -H "Host: panel.korixa.online" -H "X-Forwarded-Proto: https" "http://127.0.0.1:${BT_PORT}/panel" | head -n 20 || true
+echo "[diag] webserver conf files:"
+ls -la /www/server/panel/webserver/conf/ || true
+head -n 120 /www/server/panel/webserver/conf/* 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

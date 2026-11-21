@@ -32,7 +32,9 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] 615-639:"
-sed -n '615,639p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
+echo "[diag] cdn.conf:"
+cat /www/server/panel/config/cdn.conf 2>/dev/null || true
+echo "[diag] client_ip.py:"
+find /www/server/panel -name "client_ip.py" -exec head -n 90 {} + 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

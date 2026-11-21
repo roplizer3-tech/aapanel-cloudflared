@@ -32,7 +32,9 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-echo "[diag] grep 404 and admin_path in BTPanel/__init__.py:"
-grep -n -C 4 -E "404|admin_path" /www/server/panel/BTPanel/__init__.py 2>/dev/null | head -n 90 || true
+echo "[diag] BTPanel 615-642:"
+sed -n '615,642p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
+echo "[diag] BTPanel 785-835:"
+sed -n '785,835p' /www/server/panel/BTPanel/__init__.py 2>/dev/null || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

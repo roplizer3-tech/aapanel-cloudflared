@@ -32,10 +32,11 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-sleep 3
-echo "[diag] /tmp sockets:"
-ls -la /tmp/ || true
-echo "[diag] panel & webserver logs:"
-tail -n 20 /www/server/panel/logs/*.log /www/server/panel/webserver/logs/*.log 2>/dev/null || true
+sleep 4
+echo "[diag] admin_path.pl: $(cat /www/server/panel/data/admin_path.pl)"
+echo "[diag] panel.sock Host=127.0.0.1:7800:"
+curl -i -sS --unix-socket /tmp/panel.sock -H "Host: 127.0.0.1:7800" "http://127.0.0.1${ENTRANCE_PATH}" | head -n 15 || true
+echo "[diag] panel.sock Host=panel.korixa.online:"
+curl -i -sS --unix-socket /tmp/panel.sock -H "Host: panel.korixa.online" "http://127.0.0.1${ENTRANCE_PATH}" | head -n 15 || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

@@ -32,11 +32,7 @@ fi
 service cron start || true
 /etc/init.d/bt restart || /etc/init.d/bt start || bt start || true
 
-sleep 4
-echo "[diag] admin_path.pl: $(cat /www/server/panel/data/admin_path.pl)"
-echo "[diag] panel.sock Host=127.0.0.1:7800:"
-curl -i -sS --unix-socket /tmp/panel.sock -H "Host: 127.0.0.1:7800" "http://127.0.0.1${ENTRANCE_PATH}" | head -n 15 || true
-echo "[diag] panel.sock Host=panel.korixa.online:"
-curl -i -sS --unix-socket /tmp/panel.sock -H "Host: panel.korixa.online" "http://127.0.0.1${ENTRANCE_PATH}" | head -n 15 || true
+echo "[diag] grep 404 and admin_path in BTPanel/__init__.py:"
+grep -n -C 4 -E "404|admin_path" /www/server/panel/BTPanel/__init__.py 2>/dev/null | head -n 90 || true
 
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

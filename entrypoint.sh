@@ -12,9 +12,10 @@ fi
 
 mkdir -p /www/server/panel/logs /www/wwwroot /www/backup
 
-# 2. Configure aaPanel port
+# 2. Configure aaPanel port and disable internal panel SSL (Cloudflare/Cranl terminate TLS)
 BT_PORT="${BT_PORT:-7800}"
 echo "${BT_PORT}" > /www/server/panel/data/port.pl
+rm -f /www/server/panel/data/ssl.pl /www/server/panel/data/domain.pl
 
 # 3. Configure security entrance path (BT_PATH=none disables it)
 if [ -n "${BT_PATH:-}" ]; then
@@ -27,14 +28,10 @@ if [ -n "${BT_PATH:-}" ]; then
     fi
 fi
 
-# 4. Configure username & password if provided
+# 4. Configure password if provided
 BTPY="/www/server/panel/pyenv/bin/python"
 if [ ! -x "$BTPY" ]; then
     BTPY="$(command -v btpython || command -v python3)"
-fi
-
-if [ -n "${BT_USER:-}" ] && [ -f /www/server/panel/tools.py ]; then
-    "$BTPY" /www/server/panel/tools.py username "${BT_USER}" || true
 fi
 
 if [ -n "${BT_PASS:-}" ] && [ -f /www/server/panel/tools.py ]; then
@@ -59,9 +56,9 @@ for phpfpm in /etc/init.d/php-fpm-*; do
 done
 
 echo "[init] aaPanel listening on port ${BT_PORT}."
-if [ -f /www/server/panel/data/admin_path.pl ]; then
-    echo "[init] Entrance path: $(cat /www/server/panel/data/admin_path.pl)"
-fi
+sleep 2
+echo "[init] Local health probe (http://127.0.0.1:${BT_PORT}/):"
+curl -i -sS --max-time 5 "http://127.0.0.1:${BT_PORT}/" | head -n 20 || true
 
 # 7. Hand over to supervisord in foreground
 exec /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf

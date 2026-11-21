@@ -39,7 +39,9 @@ service cron start || true
 
 echo "[diag] Flask test_client:"
 cd /www/server/panel && "$BTPY" -c "
+import sys; sys.path.insert(0, 'class'); sys.path.insert(0, 'class_v2')
 import BTPanel
+print('admin_path:', BTPanel.admin_path)
 with BTPanel.app.test_client() as c:
     for p in ['/', '/aapanel', '/login', '/bt']:
         r = c.get(p, headers={'Host': 'panel.korixa.online'})
